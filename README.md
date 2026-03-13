@@ -9,7 +9,41 @@ Resolve Desk is designed as a real product demo for freelance clients and startu
 - role-aware organization workflows
 - analytics and SLA-focused operations
 
-## Why This Project Exists
+## Screenshots
+
+**Landing page**
+
+![Home](images/home.png)
+
+**Login**
+
+![Login](images/login.png)
+
+**Dashboard overview**
+
+![Dashboard](images/dashboard-1.png)
+
+![Dashboard analytics](images/dashboard-2.png)
+
+**Ticket queue**
+
+![Tickets list](images/tickets-page-1.png)
+
+![Tickets filtered](images/tickets-page-2.png)
+
+**Ticket detail**
+
+![Ticket detail](images/ticket-details-1.png)
+
+![Ticket conversation](images/ticket-details-2.png)
+
+![Ticket activity](images/ticket-details-3.png)
+
+**Organization members**
+
+![Members](images/members.png)
+
+## Why This Exists
 
 Most demo projects only show pretty UI. Resolve Desk demonstrates full product behavior:
 
