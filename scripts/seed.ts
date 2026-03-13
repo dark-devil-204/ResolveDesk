@@ -17,7 +17,7 @@ type TicketActivity = typeof schema.ticketActivity.$inferInsert;
 type TicketWatcher = typeof schema.ticketWatcher.$inferInsert;
 type TicketSequence = typeof schema.ticketSequence.$inferInsert;
 
-async function seed() {
+export async function seed() {
   console.log("🌱 Starting seeding process...");
 
   try {
@@ -749,4 +749,10 @@ async function createTicketSequence(
 }
 
 // Run the seeder
-seed().catch(console.error);
+const isSeedCliInvocation =
+  process.argv[1]?.endsWith("scripts/seed.ts") ||
+  process.argv[1]?.endsWith("scripts\\seed.ts");
+
+if (isSeedCliInvocation) {
+  seed().catch(console.error);
+}

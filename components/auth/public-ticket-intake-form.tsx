@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2, LifeBuoy } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Turnstile, { type BoundTurnstileObject } from "react-turnstile";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,12 +31,19 @@ import { publicTicketIntakeSchema } from "@/validators";
 type PublicTicketInput = z.infer<typeof publicTicketIntakeSchema>;
 
 export function PublicTicketIntakeForm() {
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+  const turnstileEnabled =
+    (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED ?? "true").toLowerCase() !==
+      "false" && Boolean(turnstileSiteKey);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<{
     ticketNumber: string;
     status: string;
   } | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<BoundTurnstileObject | null>(null);
 
   const form = useForm<PublicTicketInput>({
     resolver: zodResolver(publicTicketIntakeSchema),
@@ -49,6 +57,11 @@ export function PublicTicketIntakeForm() {
   });
 
   async function onSubmit(values: PublicTicketInput) {
+    if (turnstileEnabled && !turnstileToken) {
+      setError("Complete the security check before submitting.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     setSuccess(null);
@@ -60,7 +73,10 @@ export function PublicTicketIntakeForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          turnstileToken: turnstileEnabled ? turnstileToken : undefined,
+        }),
       });
 
       const payload = (await response.json().catch(() => null)) as {
@@ -77,6 +93,8 @@ export function PublicTicketIntakeForm() {
         ticketNumber: payload?.ticket?.ticketNumber ?? "TICKET",
         status: payload?.ticket?.status ?? "open",
       });
+      setTurnstileToken("");
+      turnstileRef.current?.reset();
 
       form.reset({
         organizationSlug: values.organizationSlug,
@@ -195,6 +213,47 @@ export function PublicTicketIntakeForm() {
                 </FormItem>
               )}
             />
+
+            {turnstileEnabled ? (
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                <p className="text-sm font-medium text-foreground">
+                  Verify you are human
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This challenge blocks automated ticket spam before it reaches
+                  your queue.
+                </p>
+                <div className="overflow-hidden rounded-md">
+                  <Turnstile
+                    sitekey={turnstileSiteKey}
+                    size="flexible"
+                    fixedSize
+                    refreshExpired="auto"
+                    onLoad={(_, boundTurnstile) => {
+                      turnstileRef.current = boundTurnstile;
+                    }}
+                    onVerify={(token, boundTurnstile) => {
+                      turnstileRef.current = boundTurnstile;
+                      setTurnstileToken(token);
+                      setError("");
+                    }}
+                    onExpire={(_, boundTurnstile) => {
+                      turnstileRef.current = boundTurnstile;
+                      setTurnstileToken("");
+                    }}
+                    onError={(_, boundTurnstile) => {
+                      if (boundTurnstile) {
+                        turnstileRef.current = boundTurnstile;
+                      }
+                      setTurnstileToken("");
+                      setError(
+                        "Security check failed to load. Refresh and try again.",
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
 
             {error ? (
               <p className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

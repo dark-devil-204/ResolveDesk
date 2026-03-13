@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { apiHandler } from "@/lib/api-handler";
+import { getClientIpAddress, verifyTurnstileToken } from "@/lib/turnstile";
 import { db } from "@/db/drizzle";
 import { organization, user } from "@/db/schema";
 import { createTicket } from "@/services/ticket.service";
-import { publicTicketIntakeSchema } from "@/validators";
+import { publicTicketIntakeRequestSchema } from "@/validators";
 
 export const POST = apiHandler(async (request: Request) => {
-  const payload = publicTicketIntakeSchema.parse(await request.json());
+  const payload = publicTicketIntakeRequestSchema.parse(await request.json());
+
+  await verifyTurnstileToken({
+    token: payload.turnstileToken,
+    ip: getClientIpAddress(request),
+  });
 
   const [org] = await db
     .select({ id: organization.id, slug: organization.slug })

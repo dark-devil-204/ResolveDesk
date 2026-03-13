@@ -119,3 +119,7 @@ export const publicTicketIntakeSchema = z.object({
     .min(5, "Description must be at least 5 characters")
     .max(5000, "Description cannot exceed 5000 characters"),
 });
+
+export const publicTicketIntakeRequestSchema = publicTicketIntakeSchema.extend({
+  turnstileToken: z.string().trim().optional(),
+});
